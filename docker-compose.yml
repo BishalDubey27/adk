@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (for local development)
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: sarathi
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  # Backend API
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      ALLOYDB_HOST: db
+      ALLOYDB_DATABASE: sarathi
+      ALLOYDB_USER: postgres
+      ALLOYDB_PASSWORD: postgres
+      ALLOYDB_PORT: 5432
+      ENVIRONMENT: development
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000/api/v1
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+volumes:
+  postgres_data:

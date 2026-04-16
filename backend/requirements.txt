@@ -1,0 +1,54 @@
+# Tech Sarathi Backend Requirements
+# Python 3.11+
+
+# Web Framework
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9
+
+# Database
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# Google Cloud & AI
+google-cloud-aiplatform==1.71.1
+google-cloud-alloydb-connector==1.0.0
+google-generativeai==0.8.3
+vertexai==1.71.1
+
+# Vector Operations
+pgvector==0.2.5
+numpy==1.26.4
+
+# Agent Framework
+pydantic==2.6.1
+pydantic-settings==2.1.0
+
+# Async & Scheduling
+apscheduler==3.10.4
+aiohttp==3.9.3
+
+# Authentication
+firebase-admin==6.4.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Utilities
+python-dotenv==1.0.1
+httpx==0.26.0
+tenacity==8.2.3
+
+# Monitoring & Logging
+structlog==24.1.0
+python-json-logger==2.0.7
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.4
+pytest-cov==4.1.0
+
+# Development
+black==24.1.1
+ruff==0.2.1
+mypy==1.8.0
