@@ -1,133 +1,79 @@
-# Quick Start: Tech Sarathi with AlloyDB
+# AlloyDB Quick Start — Tech Sarathi
 
-Get Tech Sarathi running with AlloyDB in 3 steps!
+Get the Tech Sarathi backend running with AlloyDB in 5 minutes.
 
-## Prerequisites
+## Option A: Local Development (Docker Compose)
 
-- Google Cloud account with billing enabled
-- gcloud CLI installed
-- ~$300-400/month budget (or use free trial credits)
+No GCP account needed. Uses local PostgreSQL + pgvector.
 
-## Step 1: Install gcloud CLI
-
-**Windows:**
-Download from: https://cloud.google.com/sdk/docs/install#windows
-
-**Mac:**
-```bash
-brew install --cask google-cloud-sdk
-```
-
-**Linux:**
-```bash
-curl https://sdk.cloud.google.com | bash
-```
-
-## Step 2: Authenticate
-
-```bash
-gcloud auth login
-gcloud auth application-default login
-```
-
-## Step 3: Run Setup Script
-
-**Windows:**
 ```powershell
-cd adk
+# 1. Start all services
+docker-compose up -d
+
+# 2. Wait for health check, then verify
+curl http://localhost:8000/health
+
+# 3. Generate skill embeddings (uses fallback hash-based embeddings locally)
+curl -X POST http://localhost:8000/api/v1/team/refresh-all-embeddings
+
+# 4. Open the frontend
+# http://localhost:5173
+```
+
+## Option B: AlloyDB on GCP
+
+### Prerequisites
+- GCP project: `nirman-project-493414`
+- `gcloud` CLI authenticated
+- Billing enabled
+
+### Steps
+
+```powershell
+# 1. Run the setup script (provisions AlloyDB cluster + instance)
 .\setup-alloydb.ps1
-```
 
-**Linux/Mac:**
-```bash
-cd adk
-chmod +x setup-alloydb.sh
-./setup-alloydb.sh
-```
+# 2. Initialize the database (creates schema + seed data)
+.\init-database.ps1
 
-Follow the prompts:
-1. Enter your GCP project ID
-2. Choose region (default: asia-south1)
-3. Set database password
-4. Wait 10-15 minutes for provisioning
+# 3. Update backend/.env with connection details from step 1 output
 
-## Step 4: Update Configuration
-
-The script will output connection details. Update `backend/.env`:
-
-```env
-ALLOYDB_HOST=<your-instance-ip>
-ALLOYDB_DATABASE=sarathi
-ALLOYDB_USER=postgres
-ALLOYDB_PASSWORD=<your-password>
-```
-
-## Step 5: Initialize Database
-
-```bash
-# Install PostgreSQL client if needed
-# Windows: https://www.postgresql.org/download/windows/
-# Mac: brew install postgresql
-# Linux: sudo apt-get install postgresql-client
-
-# Connect and create database
-psql -h <INSTANCE_IP> -U postgres -c "CREATE DATABASE sarathi;"
-
-# Run schema
-psql -h <INSTANCE_IP> -U postgres -d sarathi -f backend/db/schema.sql
-
-# Load seed data
-psql -h <INSTANCE_IP> -U postgres -d sarathi -f backend/db/seed.sql
-```
-
-## Step 6: Start the Application
-
-```bash
-# Backend
+# 4. Start the backend
 cd backend
 python -m uvicorn api.main:app --reload
 
-# Frontend (new terminal)
-cd frontend
-npm run dev
+# 5. Generate real skill embeddings via Vertex AI
+curl -X POST http://localhost:8000/api/v1/team/refresh-all-embeddings
 ```
 
-## Access the App
+## Connection Modes
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+| Mode | When to Use | Config |
+|---|---|---|
+| **Direct** (raw asyncpg) | Local dev, Docker Compose | `ALLOYDB_USE_CONNECTOR=false` |
+| **AlloyDB Connector** | Cloud Run, GKE, production | `ALLOYDB_USE_CONNECTOR=true` |
+| **IAM Auth** | Service accounts, no passwords | `ALLOYDB_IAM_AUTH=true` |
 
-## Troubleshooting
+## Embedding Modes
 
-### Can't connect to AlloyDB?
+| Mode | When Used | Quality |
+|---|---|---|
+| **Vertex AI** | GCP credentials available | ⭐⭐⭐ Best |
+| **Gemini API** | `GEMINI_API_KEY` set | ⭐⭐ Good |
+| **Hash fallback** | No credentials | ⭐ Dev only |
 
-AlloyDB is private by default. Use Cloud SQL Proxy:
+## Verify Everything Works
 
-```bash
-# Download proxy
-curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.8.0/cloud-sql-proxy.linux.amd64
+```powershell
+# Health check
+curl http://localhost:8000/health
+# Expected: {"status":"healthy","database":"connected","environment":"development"}
 
-# Run proxy
-./cloud-sql-proxy --address 0.0.0.0 --port 5432 \
-  projects/YOUR_PROJECT/locations/asia-south1/clusters/sarathi-cluster/instances/sarathi-primary
+# List team members
+curl http://localhost:8000/api/v1/team
+
+# Create a project (triggers full AI pipeline with vector search)
+curl -X POST http://localhost:8000/api/v1/projects `
+  -H "Content-Type: application/json" `
+  -d '{"name":"Test Project","description":"A test project with backend API","priority":"high","deadline":"2026-12-31"}'
 ```
-
-Then use `localhost` as ALLOYDB_HOST in your .env file.
-
-### Need help?
-
-See full documentation: [ALLOYDB_SETUP.md](ALLOYDB_SETUP.md)
-
-## Clean Up (Delete Resources)
-
-To avoid charges when not using:
-
-```bash
-gcloud alloydb instances delete sarathi-primary --cluster=sarathi-cluster --region=asia-south1
-gcloud alloydb clusters delete sarathi-cluster --region=asia-south1
-```
-
----
-
-*Tech Sarathi - NIRMAN Hackathon 2026*

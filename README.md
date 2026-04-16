@@ -20,9 +20,10 @@ Tech Sarathi is an AI-powered project management system that uses a multi-agent 
 
 ### Backend
 - **Python 3.11** + FastAPI
-- **AlloyDB AI** (PostgreSQL + pgvector)
+- **AlloyDB AI** (PostgreSQL + pgvector) with AlloyDB Connector
 - **Google ADK** for agent orchestration
-- **Gemini** for LLM capabilities
+- **Gemini 2.0 Flash** for LLM capabilities
+- **Vertex AI text-embedding-004** for semantic skill matching
 
 ### Frontend
 - **React 18** + Vite
@@ -225,11 +226,26 @@ firebase deploy --only hosting
 ### Backend (.env)
 
 ```env
-ALLOYDB_HOST=your-db-host
+# GCP
+GOOGLE_CLOUD_PROJECT=nirman-project-493414
+GOOGLE_CLOUD_REGION=asia-south1
+
+# AlloyDB (local dev)
+ALLOYDB_HOST=localhost
 ALLOYDB_DATABASE=sarathi
 ALLOYDB_USER=postgres
-ALLOYDB_PASSWORD=your-password
+ALLOYDB_PASSWORD=postgres
+
+# AlloyDB Connector (production)
+ALLOYDB_USE_CONNECTOR=false
+ALLOYDB_INSTANCE_URI=projects/nirman-project-493414/locations/asia-south1/clusters/sarathi-cluster/instances/sarathi-primary
+ALLOYDB_IAM_AUTH=false
+
+# AI
 GEMINI_API_KEY=your-api-key
+VERTEX_AI_EMBEDDING_MODEL=text-embedding-004
+
+# Thresholds
 CONFIDENCE_AUTO_THRESHOLD=0.85
 CONFIDENCE_ESCALATE_THRESHOLD=0.65
 ```

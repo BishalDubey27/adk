@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "GCP Project ID"
   type        = string
-  default     = "tech-sarathi"
+  default     = "nirman-project-493414"
 }
 
 variable "region" {
@@ -38,4 +38,10 @@ variable "db_password" {
   description = "Database password for postgres user"
   type        = string
   sensitive   = true
+}
+
+variable "enable_iam_auth" {
+  description = "Enable IAM-based authentication for AlloyDB"
+  type        = bool
+  default     = false
 }

@@ -1,5 +1,6 @@
 -- Tech Sarathi Database Schema
 -- PostgreSQL 15 + pgvector extension for AlloyDB AI
+-- Compatible with both local PostgreSQL (via pgvector/pgvector image) and AlloyDB
 
 -- Enable pgvector extension for vector operations
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -33,7 +34,7 @@ CREATE TABLE IF NOT EXISTS projects (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Tasks
+-- Tasks with optional embedding for task-to-task similarity
 CREATE TABLE IF NOT EXISTS tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     due_date DATE,
     dependencies UUID[],
     risk_score FLOAT DEFAULT 0.0,
+    task_embedding vector(768),
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -79,7 +81,11 @@ CREATE TABLE IF NOT EXISTS audit_log (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Indexes for performance
+-- ============================================================
+-- INDEXES
+-- ============================================================
+
+-- Standard B-tree indexes for performance
 CREATE INDEX IF NOT EXISTS idx_tasks_project_status ON tasks (project_id, status);
 CREATE INDEX IF NOT EXISTS idx_tasks_assigned_status ON tasks (assigned_to, status);
 CREATE INDEX IF NOT EXISTS idx_escalations_status ON escalations (status, created_at DESC);
@@ -87,10 +93,21 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_agent ON audit_log (agent_name, created
 CREATE INDEX IF NOT EXISTS idx_team_members_email ON team_members (email);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects (status);
 
--- Vector index for skill matching (IVFFlat for fast approximate search)
-CREATE INDEX IF NOT EXISTS idx_team_skill_embedding ON team_members 
-USING ivfflat (skill_embedding vector_cosine_ops)
-WITH (lists = 100);
+-- Vector indexes for similarity search (pgvector)
+-- HNSW: better recall, works well with small-to-medium datasets
+-- Use this as the primary index for skill matching
+CREATE INDEX IF NOT EXISTS idx_team_skill_embedding_hnsw ON team_members
+USING hnsw (skill_embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+
+-- Task embedding index for future task-to-task similarity features
+CREATE INDEX IF NOT EXISTS idx_task_embedding_hnsw ON tasks
+USING hnsw (task_embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+
+-- ============================================================
+-- TRIGGERS
+-- ============================================================
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -102,11 +119,19 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers for updated_at
-CREATE TRIGGER update_team_members_updated_at BEFORE UPDATE ON team_members
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DO $$
+BEGIN
+    -- Drop existing triggers if they exist, then recreate
+    DROP TRIGGER IF EXISTS update_team_members_updated_at ON team_members;
+    CREATE TRIGGER update_team_members_updated_at BEFORE UPDATE ON team_members
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON projects
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    DROP TRIGGER IF EXISTS update_projects_updated_at ON projects;
+    CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON projects
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    DROP TRIGGER IF EXISTS update_tasks_updated_at ON tasks;
+    CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+END;
+$$;

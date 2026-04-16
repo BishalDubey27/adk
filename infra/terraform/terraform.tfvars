@@ -1,10 +1,8 @@
-# Copy this file to terraform.tfvars and fill in your values
-
 project_id      = "nirman-project-493414"
 region          = "asia-south1"
 cluster_name    = "sarathi-cluster"
 instance_name   = "sarathi-primary"
 network         = "default"
 cpu_count       = 2
-db_password     = "your-secure-password"
-enable_iam_auth = false
+db_password     = "TempPass789!@#"
+enable_iam_auth = true

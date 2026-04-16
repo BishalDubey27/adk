@@ -26,7 +26,8 @@ async def list_escalations(status: str = "pending"):
         escalations = await db.fetch(query, status)
         return {"escalations": escalations}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return empty list if database is not available
+        return {"escalations": []}
 
 
 @router.get("/escalations/{escalation_id}")

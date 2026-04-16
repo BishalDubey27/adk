@@ -1,9 +1,10 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database (for local development)
+  # PostgreSQL + pgvector Database (for local development)
+  # Uses pgvector image to support CREATE EXTENSION vector
   db:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     environment:
       POSTGRES_DB: sarathi
       POSTGRES_USER: postgres
@@ -12,7 +13,13 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./backend/db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sarathi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # Backend API
   backend:
@@ -20,14 +27,21 @@ services:
     ports:
       - "8000:8000"
     environment:
+      GOOGLE_CLOUD_PROJECT: nirman-project-493414
+      GOOGLE_CLOUD_REGION: asia-south1
       ALLOYDB_HOST: db
       ALLOYDB_DATABASE: sarathi
       ALLOYDB_USER: postgres
       ALLOYDB_PASSWORD: postgres
       ALLOYDB_PORT: 5432
+      ALLOYDB_USE_CONNECTOR: "false"
+      GEMINI_MODEL: gemini-2.0-flash
+      VERTEX_AI_EMBEDDING_MODEL: text-embedding-004
+      VERTEX_AI_EMBEDDING_DIMENSIONS: 768
       ENVIRONMENT: development
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./backend:/app
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload

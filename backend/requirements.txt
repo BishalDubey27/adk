@@ -13,7 +13,7 @@ alembic==1.13.1
 
 # Google Cloud & AI
 google-cloud-aiplatform==1.71.1
-google-cloud-alloydb-connector==1.0.0
+google-cloud-alloydb-connector[asyncpg]==1.0.0
 google-generativeai==0.8.3
 vertexai==1.71.1
 
