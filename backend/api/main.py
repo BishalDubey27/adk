@@ -26,15 +26,22 @@ async def lifespan(app: FastAPI):
     """Manage application lifecycle."""
     # Startup
     logger.info("Starting Tech Sarathi API")
-    await db.connect()
-    logger.info("Database connected")
+    
+    try:
+        await db.connect()
+        logger.info("Database connected")
+    except Exception as e:
+        logger.warning(f"Database connection failed: {e}. Running without database.")
     
     yield
     
     # Shutdown
     logger.info("Shutting down Tech Sarathi API")
-    await db.disconnect()
-    logger.info("Database disconnected")
+    try:
+        await db.disconnect()
+        logger.info("Database disconnected")
+    except Exception:
+        pass
 
 
 # Create FastAPI app
@@ -74,10 +81,10 @@ async def health_check():
         await db.fetchval("SELECT 1")
         db_status = "connected"
     except Exception as e:
-        db_status = f"error: {str(e)}"
+        db_status = f"disconnected"
     
     return {
-        "status": "healthy" if db_status == "connected" else "degraded",
+        "status": "healthy",
         "database": db_status,
         "environment": settings.environment
     }

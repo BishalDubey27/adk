@@ -1,6 +1,6 @@
 # Tech Sarathi — AI-Powered Project Management System
 
-> **Team:** Tech Sarathi | **Leader:** Bishal Dubey | **Members:** Sahil Prajapati, Amit Yadav, Khush Patel  
+> **Team:** Tech Sarathi | **Leader:** Bishal Dubey | **Members:** Bishal Dubey , Sushant Patil, Amit Yadav, Khush Patel  
 > **Hackathon:** NIRMAN — Amity University Mumbai
 
 ## Overview

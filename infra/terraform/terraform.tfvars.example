@@ -1,0 +1,9 @@
+# Copy this file to terraform.tfvars and fill in your values
+
+project_id    = "your-gcp-project-id"
+region        = "asia-south1"
+cluster_name  = "sarathi-cluster"
+instance_name = "sarathi-primary"
+network       = "default"
+cpu_count     = 2
+db_password   = "your-secure-password"
